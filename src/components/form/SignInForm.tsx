@@ -1,6 +1,14 @@
 "use client";
 
-import React from "react";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import GoogleSignInButton from "../GoogleSignInButton";
+import { Button } from "../ui/button";
 import {
   Form,
   FormControl,
@@ -10,13 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import GoogleSignInButton from "../GoogleSignInButton";
+import { useToast } from "../ui/use-toast";
 
 const FormSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email"),
@@ -27,12 +29,30 @@ const FormSchema = z.object({
 });
 
 const SignInForm = () => {
+  const router = useRouter();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
+  const { toast } = useToast();
 
-  const onSubmit = (values: z.infer<typeof FormSchema>) => {
-    console.log(values);
+  const onSubmit = async (values: z.infer<typeof FormSchema>) => {
+    const signInData = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    });
+
+    if (signInData?.error) {
+      toast({
+        title: "Error",
+        description: "Wrong credentials. Please try again",
+        variant: "destructive",
+      });
+    } else {
+      router.refresh();
+      router.push("/admin");
+    }
+    console.log(signInData);
   };
 
   return (

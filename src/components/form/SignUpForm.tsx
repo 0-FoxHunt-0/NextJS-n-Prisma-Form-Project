@@ -1,6 +1,15 @@
 "use client";
 
-import React from "react";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import "axios";
+import axios from "axios";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import GoogleSignInButton from "../GoogleSignInButton";
+import { Button } from "../ui/button";
 import {
   Form,
   FormControl,
@@ -10,13 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import { Button } from "../ui/button";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import GoogleSignInButton from "../GoogleSignInButton";
+import { useToast } from "../ui/use-toast";
 
 const FormSchema = z
   .object({
@@ -37,12 +40,34 @@ const FormSchema = z
   });
 
 const SignUpForm = () => {
+  const router = useRouter();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
+  const { toast } = useToast();
 
-  const onSubmit = (values: z.infer<typeof FormSchema>) => {
-    console.log(values);
+  const onSubmit = async (values: z.infer<typeof FormSchema>) => {
+    try {
+      const response = await axios.post("/api/user", JSON.stringify(values), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.status === 201) {
+        router.push("/sign-in");
+      } else {
+      }
+    } catch (error: any) {
+      console.log(error);
+
+      if (error.response.status === 409) {
+        toast({
+          title: "Error",
+          description: "A user already has these credentials",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
